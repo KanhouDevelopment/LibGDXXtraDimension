@@ -10,9 +10,11 @@ import com.badlogic.gdx.physics.box2d.*;
 public class Character {
 	private int x;
 	private int y;
+	private int prevX;
+	private int prevY;
+	
 	private Body body;
 	
-	private TextureRegion[][] idleAnimation; 
 	private TextureRegion[][] animations;
 	private int frameTicks = 0;
     private final int aniSpeed = 6;
@@ -28,7 +30,6 @@ public class Character {
 	private boolean right;
 	private boolean down;
 	
-	private float vY;
 	
 	Character(int sx, int sy, World world, float width, float height) {
 		x = sx;
@@ -72,11 +73,10 @@ public class Character {
 		
 		//body.setLinearVelocity(0.1f, 0.0f);
 		
-		idleAnimation = new TextureRegion[2][1];
 		animations = new TextureRegion[3][4];
 		Texture idleTex = new Texture(Gdx.files.internal("../core/assets/protag.png")); 
 		Texture walkTex = new Texture(Gdx.files.internal("../core/assets/spritesheet4frames.png"));
-		Texture jumpTex = new Texture(Gdx.files.internal("../core/assets/jump.png"));
+		Texture jumpTex = new Texture(Gdx.files.internal("../core/assets/jump/1.png"));
         
         for (int i = 0; i < 4; i++) {
         	animations[1][i] = new TextureRegion(walkTex,i*123,0,123,220);
@@ -94,7 +94,7 @@ public class Character {
 		
 		if(mx > 0)
 			right = true;
-		else if(mx < 0)
+		else if( mx < 0 )
 			right = false;
 	}
 	
@@ -129,6 +129,14 @@ public class Character {
 		return y;
 	}
 		
+	public int getPrevX() {
+		return prevX;		
+	}
+		
+	public int getPrevY() {
+		return prevY;
+	}
+	
 	public void setX(int sx) {
 		x = sx;
 	
@@ -137,6 +145,13 @@ public class Character {
 	public void setY(int sy) {
 		y = sy;
 	
+	}
+	public void setPrevX(int spx) {
+		prevX = spx;
+	}
+		
+	public void setPrevY(int spy) {
+		prevY = spy;
 	}
 	
 	public boolean goingRight() {
@@ -208,8 +223,6 @@ public class Character {
 			else
 				batch.draw(getTex(0),(getBoxX()+width*2)*WORLD_TO_RENDER, getBoxY()*WORLD_TO_RENDER,
 							-(getTex(0).getRegionWidth()),(getTex(0).getRegionHeight()));
-			
-			
 		}
 		///////////
 		//Going right 

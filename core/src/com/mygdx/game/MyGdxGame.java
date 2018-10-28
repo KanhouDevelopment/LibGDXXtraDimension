@@ -1,15 +1,18 @@
 package com.mygdx.game;
 
+import java.io.Console;
+
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2D;
@@ -42,6 +45,7 @@ public class MyGdxGame extends ApplicationAdapter {
 
     private ContactListener cl;
     private Contact contact;
+    
     private RayHandler rayhandler;
     private PointLight pl;
     
@@ -49,7 +53,12 @@ public class MyGdxGame extends ApplicationAdapter {
     
     private Matrix4 cameraBox2D;
     private Box2DDebugRenderer debugRender;
-    public OrthographicCamera camera, lightCamera;
+    public OrthographicCamera worldCamera, lightCamera;
+    private Camera cam;
+    
+    
+    private Sound testSound;
+    private Music testMusic;
     //------------------
     
     private void input() {
@@ -70,6 +79,9 @@ public class MyGdxGame extends ApplicationAdapter {
     	if(Gdx.input.isKeyJustPressed(Input.Keys.D))
     		showDebug = !showDebug;
     	
+    	if(Gdx.input.isKeyJustPressed(Input.Keys.P)) {
+    		testSound.play();
+    	}
     	
     }
     
@@ -83,15 +95,26 @@ public class MyGdxGame extends ApplicationAdapter {
     	world.step(1/60f, 3, 3);
     	
     	//Render camera update after stepping is done in physics
-    	camera.update();
+    	
+    	//Rendering stuff updates according to camera.... l doesn't do that though...
+    	//worldCamera.position.set(loli.getBoxX()*WORLD_TO_RENDER, loli.getBoxY()*WORLD_TO_RENDER, 0);
+    	worldCamera.position.set((loli.getBoxX()*WORLD_TO_RENDER)+(loli.getWidth()/2), (loli.getBoxY()*WORLD_TO_RENDER)+(loli.getHeight()/2), 0);
+    	
+    	worldCamera.update();
     	
     	//Change light position to follow player to give sight
-    	pl.setPosition((loli.getBoxX()+loli.getWidth()), 
-    					(loli.getBoxY()+loli.getHeight()*1.5f));
+    	pl.setPosition((loli.getBoxX()+loli.getWidth()),(loli.getBoxY()+loli.getHeight()*1.5f));
+    	//pl.setPosition((loli.getBoxX()*WORLD_TO_RENDER)+(loli.getWidth()/2), (loli.getBoxY()*WORLD_TO_RENDER) +(loli.getHeight()/2));
+    	//pl.setPosition(loli.getBoxX()*WORLD_TO_RENDER, loli.getBoxY()*WORLD_TO_RENDER);
     	pl.update();
-    	lightCamera.update();
     	
+    	//System.out.println(loli.getBoxX()*WORLD_TO_RENDER);
+    	//lightCamera.position.set((loli.getBoxX()*WORLD_TO_RENDER)+(loli.getWidth()/2), (loli.getBoxY()*WORLD_TO_RENDER)+(loli.getHeight()/2), 0);
+    	lightCamera.position.set(loli.getBoxX(), loli.getBoxY(), 0);
+    	//lightCamera.position.set(loli.getBoxX()*WORLD_TO_RENDER, loli.getBoxY()*WORLD_TO_RENDER, 0);
+    	lightCamera.update();
     	loli.update();
+    	cam.update(loli.getBoxX(),loli.getBoxY(),loli.getWidth(),loli.getHeight());
     	
     }
     
@@ -101,32 +124,38 @@ public class MyGdxGame extends ApplicationAdapter {
     	Box2D.init();
     	world = new World(new Vector2(0,-10f),true);
 
-    	
     	rayhandler = new RayHandler(world);
     	rayhandler.setShadows(true);
     	rayhandler.setAmbientLight(0, 0, 0, 0.0f); 
-    	rayhandler.setBlurNum(1);
+    	rayhandler.setBlurNum(2);
     	
     	map = new Map("../core/assets/matrix.txt", world, RENDER_TO_WORLD);
     	
     	float w = Gdx.graphics.getWidth();
         float h = Gdx.graphics.getHeight();      
         
-        camera = new OrthographicCamera(w, h);
-        camera.position.set(camera.viewportWidth / 2f, camera.viewportHeight / 2f, 0);
-    	camera.update();
+        cam = new Camera(w,h);
+        
+        
+        batch = new SpriteBatch();
+        font = new BitmapFont();
+        loli = new Character(200,400, world, 123*RENDER_TO_WORLD, 192*RENDER_TO_WORLD);
+        
+        worldCamera = new OrthographicCamera(w, h);
+        
+//        worldCamera.position.set(loli.getBoxX()*WORLD_TO_RENDER, loli.getBoxY()*WORLD_TO_RENDER, 0);
+        //worldCamera.position.set((loli.getBoxX())*WORLD_TO_RENDER, loli.getBoxY()*WORLD_TO_RENDER, 0);
+        ///worldCamera.position.set(worldCamera.viewportWidth / 2f, worldCamera.viewportHeight / 2f, 0);
+        //System.out.println(loli.getWidth() +" " + loli.getHeight());
+        worldCamera.update();
     	
     	lightCamera = new OrthographicCamera(w*RENDER_TO_WORLD, h*RENDER_TO_WORLD);
-    	lightCamera.position.set(lightCamera.viewportWidth / 2f, lightCamera.viewportHeight / 2f, 0);
+    	//lightCamera.position.set(loli.getBoxX()*WORLD_TO_RENDER, loli.getBoxY()*WORLD_TO_RENDER, 0);
     	lightCamera.update();
     	
-        batch = new SpriteBatch();    
-        font = new BitmapFont();
-        loli = new Character(0,750, world, 123*RENDER_TO_WORLD, 192*RENDER_TO_WORLD);
-     
         pl = new PointLight(rayhandler, 256, new Color(1,1,1,0.8f), 600*RENDER_TO_WORLD, 0, 0);
         pl.setSoft(true);
-        pl.setStaticLight(false);
+        pl.setStaticLight(true);
         
         backImage = new Texture(Gdx.files.internal("../core/assets/generalconcept.png"));
         //Block textures create:
@@ -140,11 +169,15 @@ public class MyGdxGame extends ApplicationAdapter {
         //charTex = new Texture(Gdx.files.internal("../core/assets/protag.png")); 
         
         
-        
         font.setColor(Color.RED);	
         
         debugRender = new Box2DDebugRenderer();
         
+        //audio
+        testSound = Gdx.audio.newSound(Gdx.files.internal("../core/assets/heartbeat.mp3"));
+        testMusic = Gdx.audio.newMusic(Gdx.files.internal("../core/assets/indoor_ambient.mp3"));
+        testMusic.setLooping(true);
+        //testMusic.play();
     }
 
     
@@ -162,10 +195,11 @@ public class MyGdxGame extends ApplicationAdapter {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         
         update();
-        cameraBox2D = camera.combined.cpy();
-        cameraBox2D.scl(WORLD_TO_RENDER);
+        //cameraBox2D = worldCamera.combined.cpy();
+        //cameraBox2D.scl(WORLD_TO_RENDER);
         
-        batch.setProjectionMatrix(camera.combined);
+        //batch.setProjectionMatrix(worldCamera.combined);
+        batch.setProjectionMatrix(cam.getWorld().combined);
         
     	batch.begin();
     	batch.draw(backImage,0,0);
@@ -186,11 +220,15 @@ public class MyGdxGame extends ApplicationAdapter {
     	
         batch.end();
         
-        rayhandler.setCombinedMatrix(lightCamera);
+        //rayhandler.setCombinedMatrix(lightCamera);
+        rayhandler.setCombinedMatrix(cam.getLight());
         rayhandler.updateAndRender();
         
-        if(showDebug)
-        	debugRender.render(world, cameraBox2D);
+        if(showDebug) {
+        	//debugRender.render(world, cameraBox2D);
+        	debugRender.render(world, cam.getDebug());
+        }
+        	
     }
     
     @Override
